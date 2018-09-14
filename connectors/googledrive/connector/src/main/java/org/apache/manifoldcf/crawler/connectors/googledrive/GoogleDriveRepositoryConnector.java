@@ -982,22 +982,6 @@ public class GoogleDriveRepositoryConnector extends BaseRepositoryConnector {
     for (String documentIdentifier : documentIdentifiers) {
       File googleFile = getObject(documentIdentifier);
 
-      // StringBuilder log = new StringBuilder();
-      // log.append("File Original Name: " + googleFile.getOriginalFilename());
-      // log.append(System.getProperty("line.separator"));
-      // log.append("File Title: " + googleFile.getTitle());
-      // log.append(System.getProperty("line.separator"));
-      // log.append("File Description: " + googleFile.getDescription());
-      // log.append(System.getProperty("line.separator"));
-      // log.append("File Extension: " + googleFile.getFileExtension());
-      // log.append(System.getProperty("line.separator"));
-      // log.append("File MimeType: " + googleFile.getMimeType());
-      // log.append(System.getProperty("line.separator"));
-      // log.append("File Version: " + googleFile.getVersion());
-      // log.append(System.getProperty("line.separator"));
-      //
-      // System.out.println(log);
-
       String versionString;
       
       if (googleFile == null || (googleFile.containsKey("explicitlyTrashed") && googleFile.getExplicitlyTrashed())) {
@@ -1157,8 +1141,6 @@ public class GoogleDriveRepositoryConnector extends BaseRepositoryConnector {
               } else {
                 documentURI = documentURI + "?" + CONTENT_PATH_PARAM + "=" + fullContentPath;
               }
-
-              System.out.println("documentURI: " + documentURI);
 
               if (!activities.checkLengthIndexable(fileLength)) {
                 errorCode = activities.EXCLUDED_LENGTH;
