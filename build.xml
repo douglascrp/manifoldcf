@@ -97,8 +97,8 @@
     <property name="dropbox-client.version" value="1.5.3"/>
     <property name="json-simple.version" value="1.1.1"/>
     <property name="json.version" value="1.8"/>
-    <property name="google-api-client.version" value="v2-rev136-1.19.0"/>
-    <property name="google-http-client.version" value="1.19.0"/>
+    <property name="google-api-client.version" value="v2-rev326-1.25.0"/>
+    <property name="google-http-client.version" value="1.25.0"/>
     <property name="jackson-core.version" value="2.9.2"/>
     <property name="jetty-jsp-jdt.version" value="2.3.3"/>
     <property name="jetty-schemas.version" value="3.1.M0"/>

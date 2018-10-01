@@ -379,8 +379,8 @@
 
        <dependency>
             <groupId>com.google.apis</groupId>
-            <artifactId>google-api-services-drive</artifactId>
-            <version>v2-rev136-1.19.0</version>
+		    <artifactId>google-api-services-drive</artifactId>
+		    <version>v2-rev326-1.25.0</version>
         </dependency>
         <dependency>
             <groupId>com.google.http-client</groupId>
