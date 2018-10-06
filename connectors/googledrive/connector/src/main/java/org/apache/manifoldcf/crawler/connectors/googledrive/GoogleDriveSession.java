@@ -40,6 +40,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
+
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
@@ -155,6 +157,19 @@ public class GoogleDriveSession {
           new MediaHttpDownloader(HTTP_TRANSPORT, drive.getRequestFactory().getInitializer());
       downloader.setDirectDownloadEnabled(false);
       downloader.download(new GenericUrl(documentURI), outputStream);
+    } finally {
+      // Make sure it is closed and flushed
+      outputStream.close();
+    }
+  }
+  
+  /** Get the actual size for a google native format document.
+  */
+  public long getGoogleDriveNativeDocumentsSize(String fileId, String mimeType) throws IOException {
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    try {
+      drive.files().export(fileId, mimeType).executeMediaAndDownloadTo(outputStream);
+      return outputStream.toByteArray().length;
     } finally {
       // Make sure it is closed and flushed
       outputStream.close();

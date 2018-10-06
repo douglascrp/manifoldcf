@@ -19,6 +19,7 @@
 
 package org.apache.manifoldcf.crawler.connectors.googledrive;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
@@ -65,6 +66,16 @@ import com.google.api.services.drive.model.ParentReference;
  */
 public class GoogleDriveRepositoryConnector extends BaseRepositoryConnector {
 
+  // Constants for MS Office mime types
+  private static final String APPLICATION_VND_OPENXMLFORMATS_OFFICEDOCUMENT_PRESENTATIONML_PRESENTATION_MIME_TYPE = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+  private static final String APPLICATION_VND_OPENXMLFORMATS_OFFICEDOCUMENT_WORDPROCESSINGML_DOCUMENT_MIME_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  private static final String APPLICATION_VND_OPENXMLFORMATS_OFFICEDOCUMENT_SPREADSHEETML_SHEET_MIME_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  
+  //Constants for Google Docs native mime types
+  private static final String APPLICATION_VND_GOOGLE_APPS_PRESENTATION_MIME_TYPE = "application/vnd.google-apps.presentation";
+  private static final String APPLICATION_VND_GOOGLE_APPS_DOCUMENT_MIME_TYPE = "application/vnd.google-apps.document";
+  private static final String APPLICATION_VND_GOOGLE_APPS_SPREADSHEET_MIME_TYPE = "application/vnd.google-apps.spreadsheet";
+  
   protected final static String ACTIVITY_READ = "read document";
   public final static String ACTIVITY_FETCH = "fetch";
   protected static final String RELATIONSHIP_CHILD = "child";
@@ -1116,16 +1127,16 @@ public class GoogleDriveRepositoryConnector extends BaseRepositoryConnector {
               // }
 
               switch (mimeType) {
-                case "application/vnd.google-apps.spreadsheet":
-                  documentURI = getUrl(googleFile, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+                case APPLICATION_VND_GOOGLE_APPS_SPREADSHEET_MIME_TYPE:
+                  documentURI = getUrl(googleFile, APPLICATION_VND_OPENXMLFORMATS_OFFICEDOCUMENT_SPREADSHEETML_SHEET_MIME_TYPE);
                   break;
 
-                case "application/vnd.google-apps.document":
-                  documentURI = getUrl(googleFile, "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+                case APPLICATION_VND_GOOGLE_APPS_DOCUMENT_MIME_TYPE:
+                  documentURI = getUrl(googleFile, APPLICATION_VND_OPENXMLFORMATS_OFFICEDOCUMENT_WORDPROCESSINGML_DOCUMENT_MIME_TYPE);
                   break;
 
-                case "application/vnd.google-apps.presentation":
-                  documentURI = getUrl(googleFile, "application/vnd.openxmlformats-officedocument.presentationml.presentation");
+                case APPLICATION_VND_GOOGLE_APPS_PRESENTATION_MIME_TYPE:
+                  documentURI = getUrl(googleFile, APPLICATION_VND_OPENXMLFORMATS_OFFICEDOCUMENT_PRESENTATIONML_PRESENTATION_MIME_TYPE);
                   break;
 
                 default:
@@ -1142,6 +1153,15 @@ public class GoogleDriveRepositoryConnector extends BaseRepositoryConnector {
                 documentURI = documentURI + "?" + CONTENT_PATH_PARAM + "=" + fullContentPath;
               }
 
+              if (fileLength == 0 && isGoogleNativeFormat(mimeType)) {
+                try {
+					fileLength = session.getGoogleDriveNativeDocumentsSize(googleFile.getId(), getExportToMimeType(mimeType));
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+              }
+              
               if (!activities.checkLengthIndexable(fileLength)) {
                 errorCode = activities.EXCLUDED_LENGTH;
                 errorDesc = "Excluding document because of file length ('"+fileLength+"')";
@@ -1184,7 +1204,7 @@ public class GoogleDriveRepositoryConnector extends BaseRepositoryConnector {
               }
               
               if (mimeType != null)
-                rd.setMimeType(getFixedMimeType(mimeType));
+                rd.setMimeType(getExportToMimeType(mimeType));
               if (createdDate != null)
                 rd.setCreatedDate(createdDate);
               if (modifiedDate != null)
@@ -1281,16 +1301,22 @@ public class GoogleDriveRepositoryConnector extends BaseRepositoryConnector {
 
   }
 
-  private String getFixedMimeType(String mimeType) {
+  private boolean isGoogleNativeFormat(String mimeType) {
+  	return StringUtils.equals(mimeType, APPLICATION_VND_GOOGLE_APPS_SPREADSHEET_MIME_TYPE) ||
+  			StringUtils.equals(mimeType, APPLICATION_VND_GOOGLE_APPS_DOCUMENT_MIME_TYPE) ||
+  			StringUtils.equals(mimeType, APPLICATION_VND_GOOGLE_APPS_PRESENTATION_MIME_TYPE);
+  }
+  
+  private String getExportToMimeType(String mimeType) {
     switch (mimeType) {
-      case "application/vnd.google-apps.spreadsheet":
-        return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      case APPLICATION_VND_GOOGLE_APPS_SPREADSHEET_MIME_TYPE:
+        return APPLICATION_VND_OPENXMLFORMATS_OFFICEDOCUMENT_SPREADSHEETML_SHEET_MIME_TYPE;
 
-      case "application/vnd.google-apps.document":
-        return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      case APPLICATION_VND_GOOGLE_APPS_DOCUMENT_MIME_TYPE:
+        return APPLICATION_VND_OPENXMLFORMATS_OFFICEDOCUMENT_WORDPROCESSINGML_DOCUMENT_MIME_TYPE;
     		
-      case "application/vnd.google-apps.presentation":
-        return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+      case APPLICATION_VND_GOOGLE_APPS_PRESENTATION_MIME_TYPE:
+        return APPLICATION_VND_OPENXMLFORMATS_OFFICEDOCUMENT_PRESENTATIONML_PRESENTATION_MIME_TYPE;
     		
       default:
         return mimeType;
@@ -1299,13 +1325,13 @@ public class GoogleDriveRepositoryConnector extends BaseRepositoryConnector {
 
   private String getExtensionByMimeType(String mimeType) {
     switch (mimeType) {
-      case "application/vnd.google-apps.spreadsheet":
+      case APPLICATION_VND_GOOGLE_APPS_SPREADSHEET_MIME_TYPE:
       return "xlsx";
 
-      case "application/vnd.google-apps.document":
+      case APPLICATION_VND_GOOGLE_APPS_DOCUMENT_MIME_TYPE:
         return "docx";
 
-      case "application/vnd.google-apps.presentation":
+      case APPLICATION_VND_GOOGLE_APPS_PRESENTATION_MIME_TYPE:
         return "pptx";
 
       default:

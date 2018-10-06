@@ -18,6 +18,7 @@
  */
 package org.apache.manifoldcf.agents.output.cmisoutput;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
@@ -38,6 +39,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.chemistry.opencmis.client.api.CmisObject;
 import org.apache.chemistry.opencmis.client.api.Document;
 import org.apache.chemistry.opencmis.client.api.Folder;
 import org.apache.chemistry.opencmis.client.api.ItemIterable;
@@ -961,7 +963,24 @@ public class CmisOutputConnector extends BaseOutputConnector {
 
 				// create a major version
 				leafParent = getOrCreateLeafParent(parentDropZoneFolder, creationDate, Boolean.valueOf(createTimestampTree), primaryPath);
-				leafParent.createDocument(properties, contentStream, VersioningState.MAJOR);
+				
+				String documentFullPath = leafParent.getPath() + CmisOutputConnectorUtils.SLASH + fileName;
+				
+				CmisObject existingDocument = session.getObjectByPath(documentFullPath);
+				if (existingDocument == null) {
+					leafParent.createDocument(properties, contentStream, VersioningState.MAJOR);
+				} else {
+					Document currentContent = (Document) existingDocument;
+					
+					ObjectId pwcId = currentContent.checkOut();
+					Document pwc = (Document) session.getObject(pwcId); // get PWC document
+					
+					pwc.checkIn(true, properties, contentStream, "Documento atualizado");
+					
+					Logging.connectors.warn(
+							"CMIS: Document already exists - Updating: " + documentFullPath);
+				}
+					
 				resultDescription = DOCUMENT_STATUS_ACCEPTED_DESC;
 				return DOCUMENT_STATUS_ACCEPTED;
 
@@ -972,20 +991,6 @@ public class CmisOutputConnector extends BaseOutputConnector {
 
 		} catch (CmisContentAlreadyExistsException | CmisNameConstraintViolationException e) {
 			
-			//updating the existing content
-			if(leafParent != null) {
-				String documentFullPath = leafParent.getPath() + CmisOutputConnectorUtils.SLASH + fileName;
-				String newFileName = fileName+System.currentTimeMillis();
-				
-				Document currentContent = (Document) session.getObjectByPath(documentFullPath);
-				currentContent.updateProperties(properties);
-				contentStream = new ContentStreamImpl(newFileName, BigInteger.valueOf(binaryLength), mimeType, inputStream);
-				currentContent.setContentStream(contentStream, true);
-				
-				Logging.connectors.warn(
-						"CMIS: Document already exists - Updating: " + documentFullPath);
-			}
-
 			resultDescription = DOCUMENT_STATUS_ACCEPTED_DESC;
 			return DOCUMENT_STATUS_ACCEPTED;
 			
